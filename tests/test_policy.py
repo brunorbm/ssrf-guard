@@ -24,7 +24,6 @@ from ssrf_guard.policy import embedded_ipv4
         "2606:4700:4700::1111",
         "2a00:1450:4001::1",
         "::ffff:8.8.8.8",
-        "2002:808:808::1",
     ],
 )
 def test_public_addresses_allowed(addr: str) -> None:
@@ -112,6 +111,17 @@ def test_allow_cidr_does_not_unblock_embedded_mapping_by_accident() -> None:
     assert not q.is_address_allowed("::ffff:8.8.8.8")
     assert not q.is_address_allowed("64:ff9b::808:808")
     assert not q.is_address_allowed("2002:808:808::")
+
+
+def test_allowing_a_translation_prefix_keeps_embedded_checks() -> None:
+    # 6to4 is blocked wholesale by default, even around a public address.
+    assert "6to4" in (Policy().address_block_reason("2002:808:808::") or "")
+    p = Policy(allow_cidrs=("2002::/16", "64:ff9b::/96"))
+    assert p.is_address_allowed("2002:808:808::")
+    assert p.is_address_allowed("64:ff9b::808:808")
+    # Allowing the prefix must not open a path to a blocked IPv4 address.
+    assert not p.is_address_allowed("2002:7f00:1::")
+    assert not p.is_address_allowed("64:ff9b::a9fe:a9fe")
 
 
 def test_embedded_ipv4_mechanisms() -> None:

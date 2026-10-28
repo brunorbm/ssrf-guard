@@ -131,19 +131,19 @@ def test_public_ipv4_spellings(data: st.DataObject, value: int) -> None:
 @given(st.one_of(any_v4.map(IPv4Address), st.integers(0, 2**128 - 1).map(IPv6Address)))
 @example(IPv4Address("100.64.0.1"))
 @example(IPv6Address("::ffff:127.0.0.1"))
+@example(IPv6Address("2002:8000::feff:0:0"))  # found by Atheris, see fuzz/README.md
 def test_allowed_implies_globally_routable(addr: IPv4Address | IPv6Address) -> None:
     """Differential check against the stdlib's IANA special-purpose registry.
 
     The policy may be stricter than ``is_global`` (it blocks e.g. all of
-    2001::/23, Teredo, multicast) but never more permissive. Addresses that
-    embed an IPv4 address are judged by the embedded address.
+    2001::/23, Teredo, multicast) but never more permissive. Any IPv4
+    address embedded in an allowed IPv6 address must be global as well.
     """
     if not STRICT.is_address_allowed(addr):
         return
     targets: list[IPv4Address | IPv6Address] = [addr]
     if isinstance(addr, IPv6Address):
-        embedded: list[IPv4Address | IPv6Address] = [v4 for _, v4 in embedded_ipv4(addr)]
-        targets = embedded or targets
+        targets += [v4 for _, v4 in embedded_ipv4(addr)]
     for target in targets:
         assert target.is_global, addr
         assert not target.is_multicast, addr

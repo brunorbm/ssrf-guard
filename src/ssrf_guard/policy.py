@@ -63,6 +63,7 @@ DEFAULT_BLOCKED_NETWORKS: tuple[tuple[IPNetwork, str], ...] = _nets(
     ("100::/64", "discard-only (RFC 6666)"),
     ("2001:db8::/32", "documentation (RFC 3849)"),
     ("2001::/23", "IETF protocol assignments, includes Teredo 2001::/32 (RFC 2928, RFC 4380)"),
+    ("2002::/16", "deprecated 6to4 (RFC 3056, RFC 7526)"),
     ("3fff::/20", "documentation (RFC 9637)"),
     ("5f00::/16", "SRv6 SIDs (RFC 9602)"),
     ("fc00::/7", "unique local, includes AWS IMDS fd00:ec2::254 (RFC 4193)"),
@@ -139,11 +140,15 @@ class Policy:
     IP evaluation order (first match wins):
 
     1. the literal address is in ``deny_cidrs``            -> blocked
-    2. the literal address is in ``allow_cidrs``           -> allowed
-    3. an embedded IPv4 address (IPv4-mapped, NAT64, 6to4, Teredo) is
+    2. an embedded IPv4 address (IPv4-mapped, NAT64, 6to4, Teredo) is
        evaluated recursively with these same rules         -> blocked if it is
+    3. the literal address is in ``allow_cidrs``           -> allowed
     4. the address is in ``blocked_networks``              -> blocked
     5. otherwise                                           -> allowed
+
+    Embedded addresses are judged before ``allow_cidrs`` so that allowing a
+    translation prefix (say ``64:ff9b::/96`` on a NAT64 network, or
+    ``2002::/16``) never allows reaching a blocked IPv4 address through it.
     """
 
     #: Lower-case URL schemes that may be fetched.
@@ -207,13 +212,13 @@ class Policy:
         ip = _strip_scope(ip)
         if any(ip in net for net in self._deny if net.version == ip.version):
             return "in deny_cidrs"
-        if any(ip in net for net in self._allow if net.version == ip.version):
-            return None
         if isinstance(ip, IPv6Address):
             for mechanism, inner in embedded_ipv4(ip):
                 reason = self.address_block_reason(inner)
                 if reason is not None:
                     return f"{mechanism} address embedding {inner}, which is {reason}"
+        if any(ip in net for net in self._allow if net.version == ip.version):
+            return None
         for net, reason in self.blocked_networks:
             if net.version == ip.version and ip in net:
                 return reason

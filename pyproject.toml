@@ -68,7 +68,7 @@ exclude_also = ["if TYPE_CHECKING:", "\\.\\.\\.$", "raise NotImplementedError"]
 [tool.mypy]
 strict = true
 python_version = "3.10"
-files = ["src", "tests", "fuzz", "scripts"]
+files = ["src", "tests", "fuzz", "scripts", "benchmarks"]
 warn_unreachable = true
 
 [[tool.mypy.overrides]]

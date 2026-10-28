@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Resolve-and-pin protection against Server-Side Request Forgery (SSRF) for Python HTTP clients."
 readme = "README.md"
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "Bruno Rangel Borges Marchetti", email = "brunorbm@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = []
@@ -27,6 +27,13 @@ classifiers = [
     "Topic :: Security",
     "Typing :: Typed",
 ]
+
+[project.urls]
+Homepage = "https://github.com/brunorbm/ssrf-guard"
+Source = "https://github.com/brunorbm/ssrf-guard"
+Issues = "https://github.com/brunorbm/ssrf-guard/issues"
+Changelog = "https://github.com/brunorbm/ssrf-guard/blob/main/CHANGELOG.md"
+Security = "https://github.com/brunorbm/ssrf-guard/security/policy"
 
 [project.optional-dependencies]
 httpx = ["httpx>=0.27,<1", "httpcore>=1.0,<2", "anyio>=4"]
@@ -49,7 +56,10 @@ path = "src/ssrf_guard/__init__.py"
 packages = ["src/ssrf_guard"]
 
 [tool.hatch.build.targets.sdist]
-include = ["src", "tests", "README.md", "LICENSE", "CHANGELOG.md", "SECURITY.md"]
+include = [
+    "src", "tests", "docs", "fuzz", "semgrep", "benchmarks", "scripts",
+    "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "SECURITY.md", "CONTRIBUTING.md",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

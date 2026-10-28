@@ -1,0 +1,100 @@
+rules:
+  - id: unguarded-request-to-user-url
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A URL taken from the incoming request reaches an HTTP client that does
+      not enforce an SSRF policy at connect time. Use
+      ssrf_guard.integrations.httpx.guarded_client() or
+      ssrf_guard.integrations.requests.guarded_session() instead.
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery (SSRF)"
+      category: security
+      confidence: MEDIUM
+      references:
+        - https://github.com/brunorbm/ssrf-guard
+    mode: taint
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: flask.request.$ATTR
+              - pattern: request.$ATTR
+          - metavariable-regex:
+              metavariable: $ATTR
+              regex: ^(args|form|values|json|headers|cookies|data|GET|POST|body|query_params|path_params)$
+      - pattern: flask.request.get_json(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: urllib.request.urlopen($URL, ...)
+              - pattern: urllib3.request($M, $URL, ...)
+              - patterns:
+                  - pattern-either:
+                      - pattern: requests.$VERB($URL, ...)
+                      - pattern: httpx.$VERB($URL, ...)
+                      - patterns:
+                          - pattern-either:
+                              - pattern-inside: |
+                                  $C = requests.Session(...)
+                                  ...
+                              - pattern-inside: |
+                                  with requests.Session(...) as $C:
+                                    ...
+                              - pattern-inside: |
+                                  $C = httpx.Client(...)
+                                  ...
+                              - pattern-inside: |
+                                  with httpx.Client(...) as $C:
+                                    ...
+                              - pattern-inside: |
+                                  async with httpx.AsyncClient(...) as $C:
+                                    ...
+                          - pattern: $C.$VERB($URL, ...)
+                  - metavariable-regex:
+                      metavariable: $VERB
+                      regex: ^(get|post|put|patch|delete|head|options|stream)$
+          - focus-metavariable: $URL
+      # requests.request("GET", url) / client.request("GET", url): the URL is
+      # the second argument.
+      - patterns:
+          - pattern-either:
+              - pattern: requests.request($M, $URL, ...)
+              - pattern: httpx.request($M, $URL, ...)
+          - focus-metavariable: $URL
+
+  - id: validate-then-fetch-toctou
+    languages: [python]
+    severity: WARNING
+    message: >-
+      The URL is validated and then fetched by a client that resolves the
+      hostname again. DNS can answer differently the second time (DNS
+      rebinding), so the check does not protect the request. Fetch through a
+      guarded client, or connect to the address returned by Guard().resolve().
+    metadata:
+      cwe: "CWE-367: Time-of-check Time-of-use (TOCTOU) Race Condition"
+      category: security
+      confidence: HIGH
+      references:
+        - https://github.com/brunorbm/ssrf-guard/blob/main/docs/design.md
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $CHECK($U, ...)
+              ...
+          - pattern-inside: |
+              $X = $CHECK($U, ...)
+              ...
+          - pattern-inside: |
+              if $CHECK($U, ...):
+                ...
+          - pattern-inside: |
+              if not $CHECK($U, ...):
+                ...
+              ...
+      - metavariable-regex:
+          metavariable: $CHECK
+          regex: ^((.*\.)?(validate_url|parse_url|is_safe_url|is_url_safe|check_url)|.*[Gg]uard.*\.(parse|resolve))$
+      - pattern-either:
+          - pattern: requests.$VERB($U, ...)
+          - pattern: httpx.$VERB($U, ...)
+          - pattern: urllib.request.urlopen($U, ...)

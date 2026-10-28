@@ -95,9 +95,7 @@ def check_then_fetch_assigned(url: str) -> bytes:
 def pinned_fetch(url: str) -> bytes:
     target = Guard().resolve(url)
     # ok: validate-then-fetch-toctou
-    return requests.get(
-        target.pinned_url, headers={"Host": target.host_header}, timeout=5
-    ).content
+    return requests.get(target.pinned_url, headers={"Host": target.host_header}, timeout=5).content
 
 
 def guarded_fetch(url: str) -> bytes:

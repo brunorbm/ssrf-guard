@@ -23,7 +23,7 @@ _HEX = frozenset("0123456789abcdefABCDEF")
 _IPV6_CHARS = frozenset("0123456789abcdefABCDEF:.")
 _LABEL_CHARS = frozenset("abcdefghijklmnopqrstuvwxyz0123456789-_")
 # Full stops that UTS #46 / IDNA treat as label separators.
-_IDEOGRAPHIC_DOTS = ("。", "．", "｡")
+_IDEOGRAPHIC_DOTS = ("\u3002", "\uff0e", "\uff61")
 
 MAX_HOSTNAME_LENGTH = 253
 MAX_LABEL_LENGTH = 63

@@ -18,6 +18,9 @@ from .policy import IPAddress
 __all__ = ["Resolver", "SystemResolver"]
 
 
+_INET_FAMILIES: frozenset[int] = frozenset({socket.AF_INET, socket.AF_INET6})
+
+
 @runtime_checkable
 class Resolver(Protocol):
     """Anything that can resolve a hostname to IP addresses."""
@@ -51,7 +54,7 @@ class SystemResolver:
             raise ResolutionError(f"cannot resolve {_echo(host)}: {exc}") from exc
         seen: dict[IPAddress, None] = {}
         for family, _type, _proto, _canon, sockaddr in infos:
-            if family not in (socket.AF_INET, socket.AF_INET6):
+            if family not in _INET_FAMILIES:  # e.g. AF_UNIX on exotic resolvers
                 continue
             text = str(sockaddr[0]).split("%", 1)[0]
             seen.setdefault(ip_address(text), None)

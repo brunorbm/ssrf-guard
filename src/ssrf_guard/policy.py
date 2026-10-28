@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 from dataclasses import dataclass, field
 from ipaddress import (
     IPv4Address,
@@ -12,12 +11,12 @@ from ipaddress import (
     ip_address,
     ip_network,
 )
-from typing import Literal, Union
+from typing import Literal, TypeAlias
 
 from .errors import BlockedAddressError, BlockedHostnameError
 
-IPAddress = Union[IPv4Address, IPv6Address]
-IPNetwork = Union[IPv4Network, IPv6Network]
+IPAddress: TypeAlias = IPv4Address | IPv6Address
+IPNetwork: TypeAlias = IPv4Network | IPv6Network
 RedirectSchemeChanges = Literal["none", "upgrade", "any"]
 
 __all__ = [

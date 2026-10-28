@@ -85,11 +85,14 @@ select = ["E", "W", "F", "I", "B", "UP", "S", "BLE", "C4", "SIM", "RUF", "PT", "
 ignore = [
     "TRY003",  # long messages in exception constructors are intentional
     "PLR2004", # magic values are fine in a parser
-    "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+    "PLR0911", "PLR0912", "PLR0913", "PLR0915", "PLR0917",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "S104", "S105", "S106", "S113", "S310", "PLC0415", "BLE001", "TRY"]
+# Tests feed confusable Unicode on purpose: that is what they are testing.
+"tests/**" = ["S101", "S104", "S105", "S106", "S108", "S113", "S310", "PLC0415", "BLE001",
+              "TRY", "RUF001", "RUF003", "PT017"]
+"src/ssrf_guard/_host.py" = ["RUF002"]
 "fuzz/**" = ["S101", "BLE001", "PLC0415"]
 "scripts/**" = ["S101"]
 "semgrep/**" = ["ALL"]

@@ -108,9 +108,7 @@ class Guard:
             try:
                 addr = ip_address(answer)
             except ValueError as exc:
-                raise ResolutionError(
-                    f"resolver returned a non-address for {_echo(host)}"
-                ) from exc
+                raise ResolutionError(f"resolver returned a non-address for {_echo(host)}") from exc
             # Every address must pass, not just the one we would use: the
             # client library or OS might pick a different one.
             self._policy.check_address(addr, hostname=host)
@@ -120,17 +118,18 @@ class Guard:
             raise ResolutionError(f"{_echo(host)} did not resolve to any address")
         return tuple(addresses)
 
-    def check_redirect(self, current_url: str, location: str, redirects_so_far: int) -> ParsedURL:
+    def check_redirect(
+        self, current_url: str, location: str, redirects_so_far: int | None
+    ) -> ParsedURL:
         """Validate one redirect hop and return the parsed next URL.
 
-        ``redirects_so_far`` counts redirects already followed before this one.
-        The returned URL still has to be resolved (and is, automatically, by
-        the guarded transports) before connecting.
+        ``location`` may be relative. ``redirects_so_far`` counts redirects
+        already followed before this one; pass ``None`` when the HTTP client
+        enforces the limit itself. The returned URL still has to be resolved
+        (the guarded transports do that automatically) before connecting.
         """
-        if redirects_so_far + 1 > self._policy.max_redirects:
-            raise TooManyRedirectsError(
-                f"more than {self._policy.max_redirects} redirects"
-            )
+        if redirects_so_far is not None and redirects_so_far + 1 > self._policy.max_redirects:
+            raise TooManyRedirectsError(f"more than {self._policy.max_redirects} redirects")
         current = parse_url(current_url, self._policy)
         nxt = parse_url(urljoin(current.url, location), self._policy)
         if nxt.scheme != current.scheme:
